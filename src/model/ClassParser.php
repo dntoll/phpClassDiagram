@@ -3,7 +3,12 @@
 namespace model;
 
 require_once("PHPCode.php");
-require '../vendors/PHP-Parser-0.9.4/lib/bootstrap.php';
+//require '../vendors/PHP-Parser-0.9.4/lib/bootstrap.php';
+require '../vendors/PHP-Parser-2.x/lib/bootstrap.php';
+
+use PhpParser\Error;
+use PhpParser\NodeDumper;
+use PhpParser\ParserFactory;
 
 class ClassParser {
 	private static $phpKeyWords = array("true", "TRUE", "false", 
@@ -11,10 +16,13 @@ class ClassParser {
 	
 	public function __construct(PHPCode $code) {
 		$this->code = $code;	
-		$parser = new \PHPParser_Parser(new \PHPParser_Lexer);
+		$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);//new \PHPParser_Parser(new \PHPParser_Lexer);
 
 		try {
 			  $this->statements = $parser->parse($code);
+
+			  
+
 		} catch (\PHPParser_Error $e) {
 			throw new \Exception('Parse Error: '. $e->getMessage());
 		}
@@ -25,27 +33,37 @@ class ClassParser {
 		$ret = array();
 		//print_r($this->statements);
 		
-		$globalArrays = array("_SESSION", "_GET", "_POST");
-
-		foreach ($globalArrays as $value) {
+		$viewSigns = array("_GET", "_POST", "_COOKIE", "echo", "setcookie", "header", "http_response_code");
+		$modelsigns = array("_SESSION", "mysqli", "file_put_contents", "file_get_contents", "is_file", "scandir", "fclose", "fopen", "fgets");
+	
+		foreach ($viewSigns as $value) {
 			if (strpos($this->code, $value) !== FALSE) {
-				$ret[$value] = $value;
+				
+				$ret["View\\$value" ] = "View\\$value";
+				
+
+			} 
+		}
+
+		foreach ($modelsigns as $value) {
+			if (strpos($this->code, $value) !== FALSE) {
+				$ret["Model\\" . $value] = "Model\\$value" ;
+			} else {
 			}
 		}
-
-		
+	
 		if (preg_match_all('@<[\/\!]*?[^<>]*?>@si', $this->code, $array) >1 ) {
-				$ret["\HTML"] = "\HTML";
+				$ret["View\\HTML"] = "View\\HTML" . "(sign)";
 		}
 		
-		
-		$nodes = $this->findNodes("PHPParser_Node_Name", 
-								  $this->statements);
-		$nodesFull = $this->findNodes("PHPParser_Node_Name_FullyQualified", 
+		$nodes = array();
+//		$nodes = $this->findNodes("PhpParser\Node\Name", $this->statements);
+		$nodesFull = $this->findNodes("PhpParser\Node\Name\FullyQualified", 
 								  $this->statements);
 		
 		$nodes = array_merge($nodes, $nodesFull);
 		
+		$notTypes = array();
 		$notTypes = $this->getCalledFunctions();
 		$notTypes[] = $this->getNamespace();
 		$notTypes = array_merge($notTypes, self::$phpKeyWords);
@@ -84,7 +102,7 @@ class ClassParser {
 	
 	public function getArguments() {
 		$ret = array();
-		$nodes = $this->findNodes("PHPParser_Node_Param", 
+		$nodes = $this->findNodes("PhpParser\Node\Param", 
 								  $this->statements);
 		
 		foreach ($nodes as $parameter) {
@@ -97,7 +115,7 @@ class ClassParser {
 	
 	public function  getNamespace() {
 		
-		$nodes = $this->findNodes("PHPParser_Node_Stmt_Namespace", 
+		$nodes = $this->findNodes("PhpParser\Node\Stmt\Namespace_", 
 								  $this->statements);
 		
 		
@@ -116,7 +134,7 @@ class ClassParser {
 		//	print_r($this->statements);
 		
 		
-		$classNodes = $this->findNodes("PHPParser_Node_Stmt_Class", 
+		$classNodes = $this->findNodes("PhpParser\Node\Stmt\Class_", 
 									   $this->statements);
 		
 		foreach ($classNodes as $node) {

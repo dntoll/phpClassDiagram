@@ -21,7 +21,11 @@ class Folder {
 	//@return array of String filenames
 	public function getFiles() {
 		
-		assert($this->isDirectory());
+		if ($this->isDirectory() === false) {
+			throw new \Exception("not a folder");
+		}
+
+
 		
 		return $this->getChildren();
 	}
@@ -70,7 +74,7 @@ class Folder {
 	}
 	
 	public function isDirectory() {
-		return true;
+		return is_dir($this -> folderPath);
 	}
 	
 	public function getFile(File $path) {
@@ -79,11 +83,18 @@ class Folder {
 	}
 	
 	private function getChildren() {
-		if (is_dir($this -> folderPath)) {
+
+
+		if (is_dir($this ->folderPath)) {
+			
 			
 			$children = array();
 			if ($dh = opendir($this->folderPath)) {
+
+
 				while (($file = readdir($dh)) !== false) {
+
+
 					if ($file == "." || $file == "..")
 						continue;
 					

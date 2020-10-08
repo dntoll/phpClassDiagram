@@ -13,9 +13,13 @@ class ClassDiagram {
 		
 		$classes = $parser->getClasses();
 		
+
 		
 		
 		$includedClasses = $this->getIncludedClasses($classes, $className);
+
+
+		
 		$relations = $this->getRelations($classes, $includedClasses);
 
 		echo $this->getImageLink($includedClasses, $relations);
@@ -54,16 +58,28 @@ class ClassDiagram {
 
 	private function getRelations($classes, $includedClasses) {
 		$ret = array();
+
+		
 		foreach($classes as $class) {
 
-			$isIncluded = isset($includedClasses["$class->namespace\\$class->className"]);
+			$fullName = "$class->namespace\\$class->className";
+
+			$isIncluded = isset($includedClasses[$fullName]);
 			$isIncluded |=isset($includedClasses[$class->className]);
 
+			$isIncluded = true;
+
+
 			if ($isIncluded) {
+
+
+
 				foreach($class->fanout as $other) {
 					$otherClass= $this->findClass($classes, $other, $class->namespace);
+
 					
 					if(isset($includedClasses[$otherClass->getFullName()])) {
+
 						$ret[] = array($class, $otherClass->getFullName());
 					}
 				}
@@ -88,7 +104,7 @@ class ClassDiagram {
 				
 				$right = strcmp($otherClass->getFullName(), $className) == 0;
 				
-				if ($left || $right) {
+				if ($left || $right || true) {
 					$includedClasses[$otherClass->getFullName()] = $otherClass->getFullName();
 					$includedClasses[$class->getFullName()] = $class->getFullName();
 				}
@@ -125,7 +141,7 @@ class ClassDiagram {
 			$className = $namespace . "\\" . $className;
 		}
 		
-		$name = str_replace("\\", "-", $className);
+		$name = str_replace("\\", "::", $className);
 		
 		
 		

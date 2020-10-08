@@ -14,6 +14,7 @@ class ProjectParser {
 	
 	public function __construct(Folder $path) {
 		$this->path = $path;	
+
 	}
 	
 	public function getClasses() {
@@ -22,6 +23,8 @@ class ProjectParser {
 		
 		
 		$files = $this->path->getFiles();
+
+
 		
 		foreach($files as $file)  {
 			
@@ -32,11 +35,13 @@ class ProjectParser {
 					
 					$classes = $classParser->getClasses();
 					$fanout = $classParser->getDependencies();
-					
+
+
 					foreach($classes as $class) {
 						$ret[] = new ClassNode($namespace, $class, $fanout);
 					}
 				}catch(\Exception $e) {
+					var_dump($e);
 				}
 				
 			}
