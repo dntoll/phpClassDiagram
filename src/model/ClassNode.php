@@ -5,10 +5,11 @@ namespace model;
 
 class ClassNode {
 	
-	public function __construct($namespace, $className, $fanout) {
+	public function __construct($namespace, $className, $fanout, $stringconstants) {
 		$this->namespace = $namespace;
 		$this->className = $className;
 		$this->fanout = $fanout;
+		$this->stringConstants = $stringconstants;
 	}
 
 	public function getFullName() {
@@ -16,6 +17,11 @@ class ClassNode {
 			return $this->namespace . "\\" . $this->className;
 		else
 			return $this->className;
+	}
+
+	public function matchStringConstants(ClassNode $other) {
+		
+		return array_intersect($this->stringConstants, $other->stringConstants);
 	}
 
 	public function getRelativeClassName($other, $classes) {

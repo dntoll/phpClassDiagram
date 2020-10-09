@@ -35,7 +35,8 @@ class File {
 	public function isPHPFile() {
 		
 		return 	is_file($this->m_fileName) && 
-				strrpos($this->m_fileName, ".php") !== FALSE;
+				strrpos($this->m_fileName, ".php") !== FALSE ||
+				strrpos($this->m_fileName, ".inc") !== FALSE;
 	}
 	
 	public function getFile(Folder $path) {

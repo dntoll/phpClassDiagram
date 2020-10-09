@@ -30,15 +30,21 @@ class ProjectParser {
 			
 			if ($file->isDirectory() == false ) {
 				try {
-					$classParser = new ClassParser($file->getCode());
-					$namespace = $classParser->getNamespace();
+
+					if ($file->isPHPFile()) {
 					
-					$classes = $classParser->getClasses();
-					$fanout = $classParser->getDependencies();
+						
+						$classParser = new ClassParser($file->getCode());
+						$namespace = $classParser->getNamespace();
+						
+						$classes = $classParser->getClasses();
+						$fanout = $classParser->getDependencies();
+						$stringconstants = $classParser->getStringConstants();
 
 
-					foreach($classes as $class) {
-						$ret[] = new ClassNode($namespace, $class, $fanout);
+						foreach($classes as $class) {
+							$ret[] = new ClassNode($namespace, $class, $fanout, $stringconstants);
+						}
 					}
 				}catch(\Exception $e) {
 					var_dump($e);
@@ -52,6 +58,11 @@ class ProjectParser {
 				
 			}
 		}
+
+
+		//find hidden dependencies
+
+
 		return $ret;
 	}
 }

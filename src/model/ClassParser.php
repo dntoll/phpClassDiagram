@@ -13,6 +13,9 @@ use PhpParser\ParserFactory;
 class ClassParser {
 	private static $phpKeyWords = array("true", "TRUE", "false", 
 										"FALSE", "null", "NULL", "self");
+
+
+	private $statements;
 	
 	public function __construct(PHPCode $code) {
 		$this->code = $code;	
@@ -21,43 +24,82 @@ class ClassParser {
 		try {
 			  $this->statements = $parser->parse($code);
 
-			  
+			  /*var_dump($this->statements);
+			  die();*/
 
 		} catch (\PHPParser_Error $e) {
 			throw new \Exception('Parse Error: '. $e->getMessage());
 		}
 	}
 	
+
+	private function checkForThis($arrayOfThingsToLookFor, $namespace, $explain, &$arrayOfFindings) {
+		foreach ($arrayOfThingsToLookFor as $value) {
+			if (strpos($this->code, $value) !== FALSE) {
+				
+				$arrayOfFindings["$namespace\\$value" ] = "$namespace\\$value ($explain)";
+				
+
+			} 
+		}
+	}
+
+	public function getStringConstants() {
+		$ret = array();
+		$stringConstants = $this->findNodes("PhpParser\Node\Scalar\String_", $this->statements);
+		foreach ($stringConstants as $one) {
+			if (strlen($one->value) > 0) {
+				$ret[$one->value] = $one->value;
+			}
+		}
+
+
+		//if (preg_match_all('/\Wname=[\'"](.*)[\'"]/', $this->code, $array) > 1 ) {
+		/*if (preg_match_all('@\href=[\'"]([^"\']+)@', $this->code, $array) > 1 ) {
+			var_dump($array);
+			die();
+		} else {
+
+		}*/
+		
+
+		return $ret;
+	}
 	
 	public function getDependencies() {
 		$ret = array();
 		//print_r($this->statements);
 		
-		$viewSigns = array("_GET", "_POST", "_COOKIE", "echo", "setcookie", "header", "http_response_code");
-		$modelsigns = array("_SESSION", "mysqli", "file_put_contents", "file_get_contents", "is_file", "scandir", "fclose", "fopen", "fgets");
+		$viewSigns = array("_GET", "_POST", "_COOKIE", "echo ", "setcookie(", "header(", "http_response_code(", "php://stdin");
+		$modelsigns = array("mysqli", "file_put_contents(", "file_get_contents(", "is_file", "scandir", "fclose", "fopen", "fgets");
+		$sessionSigns = array("_SESSION", "session_start", "session_unset", "session_is_registered");
 	
-		foreach ($viewSigns as $value) {
-			if (strpos($this->code, $value) !== FALSE) {
-				
-				$ret["View\\$value" ] = "View\\$value";
-				
-
-			} 
-		}
-
-		foreach ($modelsigns as $value) {
-			if (strpos($this->code, $value) !== FALSE) {
-				$ret["Model\\" . $value] = "Model\\$value" ;
-			} else {
-			}
-		}
+		
+		$this->checkForThis($viewSigns, "View\\Signs", "(sign of view)", $ret);
+		$this->checkForThis($modelsigns, "DAL\\Signs", "(sign of dal)", $ret);
+		$this->checkForThis($sessionSigns, "Session\\Signs", "(sign of Session)", $ret);
 	
-		if (preg_match_all('@<[\/\!]*?[^<>]*?>@si', $this->code, $array) >1 ) {
-				$ret["View\\HTML"] = "View\\HTML" . "(sign)";
+	
+		if (preg_match_all('@<[\/\!]*?[^<>]*?>@si', $this->code, $array) > 1 ) {
+				
+				foreach ($array[0] as $key => $value) {
+					if ($key == 0)
+						continue;
+					else {
+						if (strlen(strip_tags($array[0][$key])) === 0) {
+							$ret["View\\Signs\\HTML"] = "View\\Signs\\HTML" . "(sign of view)";			
+						}
+					}
+					# code...
+				}
 		}
 		
 		$nodes = array();
 //		$nodes = $this->findNodes("PhpParser\Node\Name", $this->statements);
+
+		
+
+		
 		$nodesFull = $this->findNodes("PhpParser\Node\Name\FullyQualified", 
 								  $this->statements);
 		
